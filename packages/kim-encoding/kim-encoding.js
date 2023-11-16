@@ -20,6 +20,9 @@ function mul7(n) {
  * @returns {Uint8Array}
  */
 export function encode_uint(value, indent = 0) {
+  if (value < 0) {
+    throw new RangeError(`expected to be unsigned integer, but got ${value} instead`);
+  }
   if (indent < 0 || indent > 7) {
     throw new RangeError(`indent exepected to be in range [0, 7] but got ${indent} instead`);
   }
