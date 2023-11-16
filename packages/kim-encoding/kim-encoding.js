@@ -46,16 +46,16 @@ export function encode_uint(value, indent = 0) {
   const bytes = Math.ceil((bits + padding) / KIM_DATA_BIT_PER_BYTE);
   const result = new Uint8Array(bytes);
   let shift = mul7(bytes - 1);
-  let cont_Bit;
+  let cont_bit;
   for (let i = 0; i < bytes; i += 1) {
     if (i === 0) {
-      cont_Bit = (KIM_CONT_MASK >> indent);
+      cont_bit = (KIM_CONT_MASK >> indent);
     } else if (i === bytes - 1) {
-      cont_Bit = 0;
+      cont_bit = 0;
     } else {
-      cont_Bit = KIM_CONT_MASK;
+      cont_bit = KIM_CONT_MASK;
     }
-    result[i] = cont_Bit | ((value >> shift) & KIM_DATA_MASK);
+    result[i] = cont_bit | ((value >> shift) & KIM_DATA_MASK);
     shift -= KIM_DATA_BIT_PER_BYTE;
   }
   return result;
