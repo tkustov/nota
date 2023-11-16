@@ -1,3 +1,5 @@
+// @ts-check
+
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { encode_uint } from './kim-encoding.js';
