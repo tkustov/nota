@@ -4,8 +4,17 @@
   "type": "module",
   "description": "Kim encoding, proposed by Douglas Crockford",
   "main": "kim-encoding.js",
+  "types": "types/kim-encoding.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/kim-encoding.d.ts",
+      "import": "./kim-encoding.js"
+    }
+  },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "genTypes": "npx -p typescript tsc",
+    "prepublishOnly": "npm run genTypes"
   },
   "author": "Taras Kustov <tkusto@gmail.com>",
   "license": "ISC"
