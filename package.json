@@ -1,0 +1,15 @@
+{
+  "name": "@tkustov/nota",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Nota message format (proposed by Douglas Crockford <douglas@crockford.com>) encoder/decoder",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Taras Kustov <tkusto@gmail.com>",
+  "license": "ISC",
+  "workspaces": [
+    "packages/kim-encoding"
+  ]
+}

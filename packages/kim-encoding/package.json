@@ -1,0 +1,12 @@
+{
+  "name": "@tkustov/kim-encoding",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Kim encoding, proposed by Douglas Crockford",
+  "main": "kim-encoding.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Taras Kustov <tkusto@gmail.com>",
+  "license": "ISC"
+}
