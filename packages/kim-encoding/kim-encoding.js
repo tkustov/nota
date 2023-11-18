@@ -5,12 +5,24 @@ const KIM_CONT_MASK = 0x80;
 const KIM_DATA_MASK = 0x7F;
 
 /**
- * Multipies by 7 w/o multiply operation
- * @param {number} n - multiplicand
+ * Return count of bytes needed for Kim-encoded sequence
+ * @param {number} data_bits
+ * @param {number} indent
  * @returns {number}
  */
-function mul7(n) {
-  return (n << 3) - n;
+function bytes_for_seq(data_bits, indent) {
+  // [IICDDDDD][CDDDPPPP]
+  //             TTT
+  // I - indentation bits
+  // C - continuation
+  // D - data bits
+  // P - padding
+  // T - tail (dangling bits)
+  const high_bits = KIM_DATA_BIT_PER_BYTE - indent;
+  const tail = (data_bits - high_bits) % KIM_DATA_BIT_PER_BYTE;
+  const padding = tail > 0 ? (KIM_DATA_BIT_PER_BYTE - tail) : 0;
+  const bytes = Math.ceil((data_bits + padding) / KIM_DATA_BIT_PER_BYTE);
+  return bytes;
 }
 
 /**
@@ -34,18 +46,9 @@ export function encode_uint(value, indent = 0) {
   if (bits <= high_bits) {
     return new Uint8Array([value]);
   }
-  // [IICDDDDD][CDDDPPPP]
-  //             TTT
-  // I - indentation bits
-  // C - continuation
-  // D - data bits
-  // P - padding
-  // T - tail (dangling bits)
-  const dangling_bits = (bits - high_bits) % KIM_DATA_BIT_PER_BYTE;
-  const padding = dangling_bits > 0 ? (KIM_DATA_BIT_PER_BYTE - dangling_bits) : 0;
-  const bytes = Math.ceil((bits + padding) / KIM_DATA_BIT_PER_BYTE);
+  const bytes = bytes_for_seq(bits, indent);
   const result = new Uint8Array(bytes);
-  let shift = mul7(bytes - 1);
+  let shift = (bytes - 1) * KIM_DATA_BIT_PER_BYTE;
   let cont_bit;
   for (let i = 0; i < bytes; i += 1) {
     if (i === 0) {
@@ -62,10 +65,16 @@ export function encode_uint(value, indent = 0) {
 }
 
 /**
- * @callback DecodeUintContinuation
- * @param {number|undefined} result
- * @param {number} consumed_bytes
- * @param {Error} [error]
+ * @typedef {Object} DecodeUintResultOk
+ * @property {true} ok
+ * @property {number} value - decoded number (unsigned int)
+ * @property {number} size - amount of consumed bytes
+ */
+
+/**
+ * @typedef {Object} DecodeUintResultErr
+ * @property {false} ok
+ * @property {Error} error
  */
 
 /**
@@ -73,9 +82,9 @@ export function encode_uint(value, indent = 0) {
  * @param {ArrayLike<number>} encoded - Kim-encoded unsigned integer
  * @param {number} offset - offset of the first byte of sequence
  * @param {number} indent - first byte indentation in bits
- * @param {DecodeUintContinuation} cont
+ * @returns {DecodeUintResultOk | DecodeUintResultErr}
  */
-export function decode_uint(encoded, offset = 0, indent = 0, cont) {
+export function decode_uint(encoded, offset = 0, indent = 0) {
   let result = 0;
   /** @type {number} */
   let byte;
@@ -92,11 +101,17 @@ export function decode_uint(encoded, offset = 0, indent = 0, cont) {
       is_last_byte = (byte & KIM_CONT_MASK) === 0
     }
     if (is_last_byte) {
-      cont(result, i - offset + 1);
-      return;
+      return {
+        ok: true,
+        value: result,
+        size: i - offset + 1
+      };
     }
   }
-  cont(undefined, 0, new RangeError('Unexpected end of input'));
+  return {
+    ok: false,
+    error: new RangeError('Unexpected end of input')
+  };
 }
 
 /**
@@ -142,16 +157,14 @@ export function encode_string(input) {
 export function decode_string(input, offset = 0, length) {
   /** @type {Array<string>} */
   const chars = [];
-  /** @type {number} */
   let i = offset;
   while (i < input.length) {
-    decode_uint(input, i, 0, (codepoint, size, error) => {
-      if (codepoint === undefined) {
-        throw error;
-      }
-      chars.push(String.fromCodePoint(codepoint));
-      i += size;
-    });
+    let result = decode_uint(input, i, 0);
+    if (result.ok === false) {
+      throw result.error;
+    }
+    chars.push(String.fromCodePoint(result.value));
+    i += result.size;
     if (chars.length === length) {
       break;
     }
