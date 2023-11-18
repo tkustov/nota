@@ -1,0 +1,12 @@
+{
+  "name": "@tkustov/nota",
+  "version": "1.0.0-alpha.0",
+  "description": "Nota Message Format encoder/decoder",
+  "main": "nota.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "node --test"
+  },
+  "author": "Taras Kustov <tkusto@gmail.com>",
+  "license": "ISC"
+}

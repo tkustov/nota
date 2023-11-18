@@ -10,6 +10,7 @@
   "author": "Taras Kustov <tkusto@gmail.com>",
   "license": "ISC",
   "workspaces": [
-    "packages/kim-encoding"
+    "packages/kim-encoding",
+    "packages/nota"
   ]
 }
