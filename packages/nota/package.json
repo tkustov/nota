@@ -1,12 +1,15 @@
 {
   "name": "@tkustov/nota",
   "version": "1.0.0-alpha.0",
+  "type": "module",
   "description": "Nota Message Format encoder/decoder",
   "main": "nota.js",
-  "devDependencies": {},
   "scripts": {
     "test": "node --test"
   },
   "author": "Taras Kustov <tkusto@gmail.com>",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@tkustov/kim-encoding": "^1.0.0-alpha.2"
+  }
 }
