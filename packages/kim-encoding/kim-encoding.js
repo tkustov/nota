@@ -1,6 +1,6 @@
 // @ts-check
 
-const KIM_DATA_BIT_PER_BYTE = 7;
+const KIM_DATA_BITS_PER_BYTE = 7;
 const KIM_CONT_MASK = 0x80;
 const KIM_DATA_MASK = 0x7F;
 
@@ -18,10 +18,10 @@ function bytes_for_seq(data_bits, indent) {
   // D - data bits
   // P - padding
   // T - tail (dangling bits)
-  const high_bits = KIM_DATA_BIT_PER_BYTE - indent;
-  const tail = (data_bits - high_bits) % KIM_DATA_BIT_PER_BYTE;
-  const padding = tail > 0 ? (KIM_DATA_BIT_PER_BYTE - tail) : 0;
-  const bytes = Math.ceil((data_bits + padding) / KIM_DATA_BIT_PER_BYTE);
+  const high_bits = KIM_DATA_BITS_PER_BYTE - indent;
+  const tail = (data_bits - high_bits) % KIM_DATA_BITS_PER_BYTE;
+  const padding = tail > 0 ? (KIM_DATA_BITS_PER_BYTE - tail) : 0;
+  const bytes = Math.ceil((data_bits + padding) / KIM_DATA_BITS_PER_BYTE);
   return bytes;
 }
 
@@ -42,13 +42,13 @@ export function encode_uint(value, indent = 0) {
   while (value >= (1 << bits)) {
     bits += 1;
   }
-  const high_bits = KIM_DATA_BIT_PER_BYTE - indent;
+  const high_bits = KIM_DATA_BITS_PER_BYTE - indent;
   if (bits <= high_bits) {
     return new Uint8Array([value]);
   }
   const bytes = bytes_for_seq(bits, indent);
   const result = new Uint8Array(bytes);
-  let shift = (bytes - 1) * KIM_DATA_BIT_PER_BYTE;
+  let shift = (bytes - 1) * KIM_DATA_BITS_PER_BYTE;
   let cont_bit;
   for (let i = 0; i < bytes; i += 1) {
     if (i === 0) {
@@ -59,7 +59,7 @@ export function encode_uint(value, indent = 0) {
       cont_bit = KIM_CONT_MASK;
     }
     result[i] = cont_bit | ((value >> shift) & KIM_DATA_MASK);
-    shift -= KIM_DATA_BIT_PER_BYTE;
+    shift -= KIM_DATA_BITS_PER_BYTE;
   }
   return result;
 }
@@ -92,12 +92,100 @@ export function decode_uint(encoded, offset = 0, indent = 0) {
   let is_last_byte;
   for (let i = offset; i < encoded.length; i += 1) {
     byte = encoded[i];
-    result = result << KIM_DATA_BIT_PER_BYTE;
+    result = result << KIM_DATA_BITS_PER_BYTE;
     if (i === offset) {
       result = result | (byte & (KIM_DATA_MASK >> indent));
       is_last_byte = (byte & (KIM_CONT_MASK >> indent)) === 0;
     } else {
       result = result | (byte & KIM_DATA_MASK);
+      is_last_byte = (byte & KIM_CONT_MASK) === 0
+    }
+    if (is_last_byte) {
+      return {
+        ok: true,
+        value: result,
+        size: i - offset + 1
+      };
+    }
+  }
+  return {
+    ok: false,
+    error: new RangeError('Unexpected end of input')
+  };
+}
+
+/**
+ * Encode bigint to Kim-encoded sequence of bytes
+ * if bigint is negative sign will be ignored
+ * @param {bigint} bigint
+ * @param {number} indent
+ * @returns {Uint8Array}
+ */
+export function encode_bigint(bigint, indent) {
+  if (bigint === 0n) {
+    return new Uint8Array([0]);
+  }
+  if (indent < 0 || indent > 7) {
+    throw new RangeError(`indent exepected to be in range [0, 7] but got ${indent} instead`);
+  }
+  /** @type {Array<number>} */
+  const chunks = [];
+  let data = bigint < 0 ? -bigint : bigint;
+  while (data > 0) {
+    if (chunks.length > 1) {
+      chunks[chunks.length - 1] = chunks[chunks.length - 1] | KIM_CONT_MASK;
+    }
+    chunks.push(Number(BigInt.asUintN(KIM_DATA_BITS_PER_BYTE, data)));
+    data = data >> BigInt(KIM_DATA_BITS_PER_BYTE);
+  }
+  // check if highest byte fits the first byte indent
+  if ((chunks[chunks.length - 1] & (0x7F80 >>> (indent))) !== 0) {
+    if (chunks.length > 1) {
+      chunks[chunks.length - 1] = chunks[chunks.length - 1] | KIM_CONT_MASK;
+    }
+    chunks.push(0);
+  }
+  const result = new Uint8Array(chunks.reverse());
+  if (result.length > 1) {
+    result[0] = result[0] | (KIM_CONT_MASK >> indent);
+  }
+  return result;
+}
+
+/**
+ * @typedef {Object} DecodeBigIntResultOk
+ * @property {true} ok
+ * @property {bigint} value - decoded number (unsigned int)
+ * @property {number} size - amount of consumed bytes
+ */
+
+/**
+ * @typedef {Object} DecodeBigIntResultErr
+ * @property {false} ok
+ * @property {Error} error
+ */
+
+/**
+ * Decode Kim-encoded bigint to bigint
+ * @param {ArrayLike<number>} encoded
+ * @param {number} offset
+ * @param {number} indent
+ * @returns {DecodeBigIntResultOk | DecodeBigIntResultErr}
+ */
+export function decode_bigint(encoded, offset = 0, indent = 0) {
+  let result = 0n;
+  /** @type {number} */
+  let byte;
+  /** @type {boolean} */
+  let is_last_byte;
+  for (let i = offset; i < encoded.length; i += 1) {
+    byte = encoded[i];
+    result = result << BigInt(KIM_DATA_BITS_PER_BYTE);
+    if (i === offset) {
+      result = result | BigInt(byte & (KIM_DATA_MASK >> indent));
+      is_last_byte = (byte & (KIM_CONT_MASK >> indent)) === 0;
+    } else {
+      result = result | BigInt(byte & KIM_DATA_MASK);
       is_last_byte = (byte & KIM_CONT_MASK) === 0
     }
     if (is_last_byte) {
