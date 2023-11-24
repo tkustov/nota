@@ -121,7 +121,7 @@ export function decode_uint(encoded, offset = 0, indent = 0) {
  * @param {number} indent
  * @returns {Uint8Array}
  */
-export function encode_bigint(bigint, indent) {
+export function encode_bigint(bigint, indent = 0) {
   if (bigint === 0n) {
     return new Uint8Array([0]);
   }
