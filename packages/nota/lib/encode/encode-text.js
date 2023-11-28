@@ -5,15 +5,15 @@ import { TYPE_TEXT } from '../type-markers.js';
 /**
  * Encode string to text block of Nota message format
  * @param {string} input
- * @param {NotaEncodeCb} cont
+ * @returns {Uint8Array}
  */
-export function encode_text(input, cont) {
+export function encode_text(input) {
   const preamble = encode_text_premble(codepoints_count(input));
   const text = encode_string(input);
-  new Blob([preamble.buffer, text.buffer])
-    .arrayBuffer()
-    .then(data => cont(new Uint8Array(data)))
-    .catch(err => cont(undefined, err));
+  const result = new Uint8Array(preamble.length + text.length);
+  result.set(preamble, 0);
+  result.set(text, preamble.length);
+  return result;
 }
 
 /**

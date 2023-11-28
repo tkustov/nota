@@ -9,9 +9,9 @@ const UNSIGNED_MASK = 0b11110111;
 /**
  * Encode number to integer block of Nota message format
  * @param {number} input
- * @param {NotaEncodeCb} cont
+ * @returns {Uint8Array}
  */
-export function encode_integer(input, cont) {
+export function encode_integer(input) {
   const is_positive = input >= 0;
   const result = encode_uint(is_positive ? input : -input, 4);
   result[0] = result[0] | TYPE_INTEGER;
@@ -19,5 +19,5 @@ export function encode_integer(input, cont) {
   if (!is_positive) {
     result[0] = result[0] | NEGATIVE_BIT;
   }
-  setTimeout(cont, 0, result);
+  return result;
 }

@@ -8,28 +8,28 @@ const is_nan = Number.isNaN;
 /**
  * Encode float block of Nota message format
  * @param {number} input
- * @param {NotaEncodeCb} cont
+ * @returns {Uint8Array}
  */
-export function encode_float(input, cont) {
-  try {
-    const {
-      exponent,
-      exponent_sign,
-      significand,
-      significand_sign
-    } = parse_float(input);
-    const coefficient = encode_bigint(significand, 4);
-    coefficient[0] = coefficient[0] | TYPE_FLOAT;
-    coefficient[0] = coefficient[0] | (exponent_sign << 4);
-    coefficient[0] = coefficient[0] | (significand_sign << 3);
-    const exp_cont = encode_uint(exponent);
-    new Blob([coefficient, exp_cont])
-      .arrayBuffer()
-      .then(data => cont(new Uint8Array(data)))
-      .catch(err => cont(undefined, err));
-  } catch (err) {
-    setTimeout(cont, 0, undefined, err);
-  }
+export function encode_float(input) {
+  const {
+    exponent,
+    exponent_sign,
+    significand,
+    significand_sign
+  } = parse_float(input);
+  const coefficient = encode_bigint(significand, 4);
+  // reset continuation bit
+  coefficient[0] = coefficient[0] & 0xF7;
+  // set type marker
+  coefficient[0] = coefficient[0] | TYPE_FLOAT;
+  // set signs
+  coefficient[0] = coefficient[0] | (exponent_sign << 4);
+  coefficient[0] = coefficient[0] | (significand_sign << 3);
+  const exp_cont = encode_uint(exponent);
+  const result = new Uint8Array(coefficient.length + exp_cont.length);
+  result.set(coefficient, 0);
+  result.set(exp_cont, coefficient.length);
+  return result;
 }
 
 /**

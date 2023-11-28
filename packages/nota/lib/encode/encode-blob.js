@@ -11,14 +11,14 @@ import { TYPE_BLOB } from '../type-markers.js';
 /**
  * Encode Blob to Nota format
  * @param {ArrayBuffer} input
- * @param {NotaEncodeCb} cont
+ * @returns {Uint8Array}
  */
-export function encode_blob(input, cont) {
+export function encode_blob(input) {
   const preamble = encode_blob_preamble(input.byteLength * 8);
-  new Blob([preamble.buffer, input])
-    .arrayBuffer()
-    .then(buffer => cont(new Uint8Array(buffer)))
-    .catch(err => cont(undefined, err));
+  const result = new Uint8Array(preamble.length + input.byteLength);
+  result.set(preamble, 0);
+  result.set(new Uint8Array(input), preamble.length);
+  return result;
 }
 
 /**
