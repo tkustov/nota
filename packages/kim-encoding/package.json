@@ -1,6 +1,6 @@
 {
   "name": "@tkustov/kim-encoding",
-  "version": "1.0.0-alpha.2",
+  "version": "1.0.0-alpha.3",
   "type": "module",
   "description": "Kim encoding, proposed by Douglas Crockford",
   "main": "kim-encoding.js",
