@@ -236,26 +236,48 @@ export function encode_string(input) {
 }
 
 /**
+ * @typedef {Object} DecodeStringResultOk
+ * @property {true} ok
+ * @property {string} value - decoded string
+ * @property {number} size - amount of consumed bytes
+ */
+
+/**
+ * @typedef {Object} DecodeStringResultErr
+ * @property {false} ok
+ * @property {Error} error
+ */
+
+/**
  * Decode Kim-encoded string
  * @param {ArrayLike<number>} input
  * @param {number} offset
  * @param {number} [length]
- * @returns {string}
+ * @returns {DecodeStringResultOk | DecodeStringResultErr}
  */
 export function decode_string(input, offset = 0, length) {
   /** @type {Array<string>} */
   const chars = [];
   let i = offset;
+  /** @type {DecodeUintResultOk | DecodeUintResultErr} */
+  let codepoint_result;
   while (i < input.length) {
-    let result = decode_uint(input, i, 0);
-    if (result.ok === false) {
-      throw result.error;
+    codepoint_result = decode_uint(input, i);
+    if (codepoint_result.ok === false) {
+      return {
+        ok: false,
+        error: codepoint_result.error
+      };
     }
-    chars.push(String.fromCodePoint(result.value));
-    i += result.size;
+    chars.push(String.fromCodePoint(codepoint_result.value));
+    i += codepoint_result.size;
     if (chars.length === length) {
       break;
     }
   }
-  return chars.join('');
+  return {
+    ok: true,
+    value: chars.join(''),
+    size: i - offset
+  };
 }
